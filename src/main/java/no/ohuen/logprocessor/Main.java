@@ -20,14 +20,13 @@ import org.apache.log4j.Logger;
  * @author abnormal
  */
 public class Main {
-
     private static final Logger LOG = Logger.getLogger(Main.class.getName());
-
     private static final String FORMAT = "%h %l %u %t \"%r\" %>s %b";
 
     public static void main(String[] args) {
         Properties config = new Properties();
         Parser<LogPojo> logParser = new HttpdLoglineParser<>(LogPojo.class, FORMAT);
+        
         config.put(StreamsConfig.APPLICATION_ID_CONFIG, "logprocessor");
         config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
@@ -46,10 +45,8 @@ public class Main {
                LOG.fatal(ex.getMessage());
             }
         });
-
         KafkaStreams streams = new KafkaStreams(builder, config);
         streams.start();
-
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
     }
 }
