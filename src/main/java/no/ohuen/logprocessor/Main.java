@@ -1,6 +1,7 @@
 package no.ohuen.logprocessor;
 
 import java.util.Arrays;
+import java.util.List;
 import org.apache.kafka.streams.StreamsConfig;
 import java.util.Properties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -20,22 +21,33 @@ import org.apache.kafka.streams.Consumed;
 public class Main {
 
     public static void main(String[] args) {
-        final Properties config = new Properties();
-
-        config.put(StreamsConfig.APPLICATION_ID_CONFIG, "logprocessor");
-        config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "10.47.90.206:9092");
-        config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
-        
+        final Properties config = ConsumerUtils.getConsumerProperties();
         final Deserializer<LogPojo> logDeserializer = new LogPojoDeserializer<>();
         final Serializer<LogPojo> logSerializer = new LogPojoSerializer<>();
         final Serde<LogPojo> logSerde = Serdes.serdeFrom(logSerializer, logDeserializer);
 
         StreamsBuilder builder = new StreamsBuilder();
         KStream<String, LogPojo> textLines = builder.stream("httpd-logger", Consumed.with(Serdes.String(), logSerde));
-        textLines.filter((k,v) -> Arrays.asList("403","404","500").contains(v.getStatus())).print();
+        textLines.filterNot((k, v) -> Main.isStaticResource(v.getUri()))
+                .filter((k, v) -> Arrays.asList("200", "403", "404", "500").contains(v.getStatus()));
         KafkaStreams streams = new KafkaStreams(builder.build(), config);
         streams.start();
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+    }
+
+    /**
+     * Returns true if String uri represent a static resource
+     *
+     * @param uri
+     * @return
+     */
+    private static boolean isStaticResource(String uri) {
+        if (null == uri) {
+            return false;
+        }
+        List<String> staticResourceExtensions = Arrays.asList(
+                ".js", ".css", ".map", ".png", ".jpg", ".gif", ".bmp", ".woff", ".ttf");
+        String[] split = uri.split("\\?");
+        return staticResourceExtensions.stream().anyMatch(extension -> (split[0].endsWith(extension)));
     }
 }

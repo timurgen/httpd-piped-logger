@@ -35,7 +35,6 @@ public class LogPojoDeserializer<T> implements Deserializer<T> {
         if (bytes == null) {
             return null;
         }
-
         T data;
         try {
             data = (T) this.logParser.parse(new String(bytes, StandardCharsets.UTF_8));
