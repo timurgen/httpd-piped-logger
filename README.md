@@ -1,6 +1,8 @@
 # httpd-piped-logger
 Simple httpd piped kafka logger that sends httpd access logs to Apache Kafka.
 
+[![travis-ci build status](https://travis-ci.org/timurgen/httpd-piped-logger.svg)](https://travis-ci.org/timurgen/httpd-piped-logger)
+
 ### Usage
 add to httpd.conf
 
